@@ -1,0 +1,288 @@
+---
+title: 'MA717: Applied Regression and Experimental Data Analysis'
+author: 'Mahidul Abir (Registration Number: 2501695)'
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+\textbf{Task 1: Data reading and simple exploration}
+
+\textbf{1.1.} I read the file "College.csv" into R using the following command, and used dim() and head() to check that the data were imported correctly.
+
+```{r, eval=TRUE}
+mydata <- read.csv("College.csv",
+                   header = TRUE,
+                   stringsAsFactors = TRUE)
+```
+
+```{r}
+dim(mydata)
+head(mydata)
+```
+
+From the output of \verb|dim(mydata)|, we can see that the dataset contains
+\textbf{775} observations and \textbf{17} variables. The \verb|head(mydata)| command prints the first six rows of the dataset, which confirms that the data have been read correctly from \texttt{College.csv}.
+
+From the printed tables above, I can see the composition of the random sample of 700 colleges. The first table shows how many universities are \textbf{Private} and how many are \textbf{Public}, and the second table shows how many are \textbf{Elite} and how many are \textbf{Non-Elite}. These numbers are what I report for this part of the task.
+
+\textbf{1.2.} My registration number is \textbf{2501695}, so I use \verb|set.seed(2501695)| as the random seed. I then take a random sample of 700 observations from the original \verb|mydata| dataset to create a new dataset called \verb|mynewdata|. I use \verb|summary(mynewdata)| to summarise the variables, and \verb|cat()| with \verb|table()| to print the numbers of Private/Public and Elite/Non-Elite universities in the same style as the template.
+
+```{r, eval=TRUE}
+# use my registration number as the random seed
+set.seed(2501695)
+
+# random subset of size 700 from mydata
+mynewdata <- mydata[sample(1:nrow(mydata), 700), ]
+
+# summary of mynewdata
+summary(mynewdata)
+```
+
+```{r}
+# number of Private and Public universities
+cat("\nNumber of Private and Public Universities:\n")
+table(mynewdata$Private)
+
+# number of Elite and Non-Elite universities
+cat("\nNumber of Elite and Non-Elite Universities:\n")
+table(mynewdata$Elite)
+```
+
+\textbf{1.3.} In this part, I use the dataset \verb|mynewdata| created in Task 1.2 and produce histogram plots for the four cost-related variables \verb|Outstate|, \verb|Room.Board|, \verb|Books| and \verb|Personal|. Each histogram has a descriptive title and labels for both the x-axis (the value of the variable) and the y-axis (the frequency of colleges with those values).
+
+```{r, eval=TRUE}
+hist(mynewdata$Outstate,
+     main = "Histogram of Out-of-State Tuition",
+     xlab  = "Out-of-State tuition (US dollars)",
+     ylab  = "Number of colleges")
+
+hist(mynewdata$Room.Board,
+     main = "Histogram of Room and Board Costs",
+     xlab  = "Room and board (US dollars)",
+     ylab  = "Number of colleges")
+
+hist(mynewdata$Books,
+     main = "Histogram of Book Costs",
+     xlab  = "Book costs (US dollars)",
+     ylab  = "Number of colleges")
+
+hist(mynewdata$Personal,
+     main = "Histogram of Personal Spending",
+     xlab  = "Personal spending (US dollars)",
+     ylab  = "Number of colleges")
+
+# reset plotting layout
+par(mfrow = c(1, 1))
+```
+
+Overall, the histograms show that these cost variables tend to be right-skewed: most colleges have moderate costs, while a smaller number of colleges have much higher tuition, room and board, book and personal spending values.
+
+\textbf{Task 2: Linear regression}
+
+\textbf{2.1.} In this part I fit a simple linear regression model to investigate how graduation rates depend on whether a college is private or public and whether it is elite or non-elite. I use \verb|mynewdata| as the dataset, with \verb|Grad.Rate| as the response variable and the two factor predictors \verb|Private| and \verb|Elite|. This allows me to quantify the average difference in graduation rates between private and public colleges, and between elite and non-elite colleges, and to assess how well these two variables explain the variation in graduation rates.
+
+```{r}
+myfit.simple <- lm(Grad.Rate ~ Private + Elite, data = mynewdata)
+
+summary(myfit.simple)
+```
+In this model, the intercept corresponds to the expected graduation rate for the baseline group, which is a \emph{public, non-elite} college (\verb|Private = "No"| and \verb|Elite = "No"|). The estimated intercept is about 54.60, so the model suggests that public, non-elite institutions have an average graduation rate of roughly 55$%$.
+
+The coefficient for \verb|PrivateYes| is approximately 12.40 and is positive. This means that, after controlling for whether a college is elite or not, private colleges are estimated to have graduation rates that are about 12.4 percentage points higher on average than comparable public colleges. The coefficient for \verb|EliteYes| is about 18.66, indicating that, holding private/public status fixed, elite colleges tend to have graduation rates roughly 18.7 percentage points higher than non-elite colleges. Both effects are substantial and positive, suggesting that being private and being elite are each associated with higher graduation rates.
+
+Turning to \textbf{significance}, the p-values for both \verb|PrivateYes| and \verb|EliteYes| are extremely small (reported as $< 2\times 10^{-16}$), far below the usual 0.05 threshold. This provides very strong evidence that both predictors are statistically significant: it is highly unlikely that the observed differences in graduation rates between private and public colleges, or between elite and non-elite colleges, are due to random chance alone.
+
+The \textbf{adjusted $R^2$} of the model is about 0.2242. This means that, after adjusting for the number of predictors, the model explains roughly 22$%$ of the variability in graduation rates across colleges using only the two variables \verb|Private| and \verb|Elite|. While this indicates that these predictors are important, it also shows that a large proportion of the variation in \verb|Grad.Rate| remains unexplained. In practice, this suggests that other factors (such as expenditure, student--faculty ratio, or other institutional characteristics) are likely to be relevant and should be included in more complex models.
+
+Finally, the \textbf{F-statistic} for the overall regression is about 102 with 2 and 697 degrees of freedom, and the associated p-value is again extremely small (less than $2.2\times 10^{-16}$). The F-test compares this model with a null model that has no predictors and tests whether the predictors jointly have any explanatory power. The very small p-value means we can confidently reject the null hypothesis that both regression coefficients (for \verb|Private| and \verb|Elite|) are zero. In other words, the model as a whole is highly statistically significant, and at least one of the predictors is strongly related to \verb|Grad.Rate|. However, given the modest adjusted $R^2$, there is still room to improve the model by adding additional relevant predictors.
+
+\textbf{2.2} In this part I use the fitted model \verb|myfit.simple| from Task 2.1 to quantify the uncertainty in the estimated regression coefficients and to make a prediction for a new college. First, I compute 95\% confidence intervals for all regression coefficients. Then, I obtain a 95\% prediction interval for the graduation rate of a new college that is private but not elite (\verb|Private = "Yes"|, \verb|Elite = "No"|).
+
+```{r, eval=TRUE}
+# 95% confidence intervals for regression coefficients
+confint(myfit.simple)
+```
+
+```{r}
+# new observation: Private = "Yes", Elite = "No"
+new_data <- data.frame(Private = "Yes", Elite = "No")
+
+# 95% prediction interval for Grad.Rate of this new college
+predict(myfit.simple, newdata = new_data, interval = "prediction")
+```
+
+The \textbf{confidence intervals} from \verb|confint(myfit.simple)| give 95% ranges for the true regression coefficients. For each coefficient, the interval shows how large (or small) the corresponding effect could reasonably be, given the data. In particular, the intervals for \verb|PrivateYes| and \verb|EliteYes| do not contain zero, which agrees with Task 2.1: both \verb|Private| and \verb|Elite| have statistically significant effects on \verb|Grad.Rate|.
+
+The \textbf{prediction interval} from \verb|predict()| for a new college with \verb|Private = "Yes"| and \verb|Elite = "No"| gives a fitted graduation rate together with lower and upper bounds. We interpret this as a range in which the graduation rate of a single new private, non-elite college is expected to fall with 95% probability, assuming the model is correct. This interval is wider than a confidence interval for the mean because it includes both uncertainty in the estimated coefficients and the natural variation between individual colleges.
+
+\textbf{2.3.} In this part I fit a multiple linear regression model that uses all available predictors in \verb|mynewdata| to explain variation in \verb|Grad.Rate|. The idea is to see how graduation rates are related not only to \verb|Private| and \verb|Elite|, but also to variables such as numbers of applicants, out-of-state tuition, room and board costs, and alumni giving. I then compare this full model with the simpler two-predictor model from Task 2.1 using an ANOVA test.
+
+```{r, eval=TRUE}
+myfit.full <- lm(Grad.Rate ~ ., data = mynewdata)
+summary(myfit.full)
+```
+From the \verb|summary(myfit.full)| output, several predictors have p-values below 0.05 and therefore make a statistically significant contribution to explaining \verb|Grad.Rate|. In my model these include \verb|PrivateYes|, \verb|Apps|, \verb|P.Undergrad|, \verb|Outstate|, \verb|Room.Board|, \verb|Personal|, \verb|PhD|, \verb|perc.alumni|, \verb|Expend| and \verb|EliteYes|. This suggests that, after adjusting for the other variables, private status, application numbers, part-time enrolment, fees and living costs, personal spending, staff qualifications, alumni giving, institutional expenditure and elite status are all related to graduation rates. By contrast, variables such as \verb|Accept|, \verb|Enroll|, \verb|F.Undergrad|, \verb|Books|, \verb|Terminal| and \verb|S.F.Ratio| have relatively large p-values, indicating that they are not strongly associated with \verb|Grad.Rate| once the other predictors are in the model.
+
+The adjusted $R^2$ of the full model is about 0.442, meaning that roughly 44.2\% of the variation in graduation rates is explained by this set of predictors. This is much higher than the adjusted $R^2$ of the simple model in 2.1 (about 0.224), so the full model clearly has better explanatory power. The residual standard error also decreases from about 15.14 in the simple model to about 12.84 in the full model, which indicates a tighter fit around the regression line.
+
+The F-statistic for the full model is 35.61 on 16 and 683 degrees of freedom, with a p-value less than $2.2\times 10^{-16}$. This extremely small p-value shows that, taken together, the predictors in the full model provide a highly significant improvement over a model with no predictors. Combined with the higher adjusted $R^2$ and smaller residual error, this indicates that the multiple regression in 2.3 gives a substantially better description of \verb|Grad.Rate| than the simple two-predictor model from 2.1. An ANOVA comparison \verb|anova(myfit.simple, myfit.full)| (not shown here) would therefore be expected to give a very small p-value, confirming that the full model is significantly better than the simple model.
+
+\textbf{Justify using ANOVA}
+
+```{r}
+anova(myfit.simple, myfit.full)
+```
+
+The ANOVA table compares the simple model from 2.1 (Model 1) with the full model in 2.3 (Model 2). The residual sum of squares (RSS) decreases from 159\,723 in Model 1 to 112\,566 in Model 2, a reduction of 47\,157 units when the additional predictors are added. The F-statistic for this comparison is 20.437 with 14 and 683 degrees of freedom, and the associated p-value is less than $2.2\times 10^{-16}$. This extremely small p-value shows that the reduction in RSS is far too large to be explained by chance alone, so the extra predictors in Model 2 significantly improve the fit. Therefore, the multiple regression model in 2.3 is statistically significantly better than the simple model in 2.1 for explaining variation in \texttt{Grad.Rate}.
+
+\textbf{2.4.} To assess whether the assumptions of the multiple linear regression model in 2.3 are reasonable, I inspect the standard diagnostic plots for \verb|myfit.full|.
+
+```{r, eval=TRUE}
+par(mfrow = c(2, 2))
+plot(myfit.full)
+```
+In the Residuals vs Fitted plot, the residuals are mostly scattered around the horizontal zero line, which broadly supports the linearity assumption. There are, however, some mild patterns and changes in spread at certain fitted values, hinting at slight departures from perfect linearity and some non-constant variance.
+
+In the Normal Q--Q plot, most points lie close to the reference line, but the residuals at the extremes deviate more clearly. This suggests that, while the residuals are roughly normal in the centre, there are a few observations in the tails that behave like outliers and cause some departure from normality.
+
+The Scale--Location plot shows that the spread of the residuals is not completely uniform across the fitted values. There is a gentle increase in the variability for some ranges of fitted values, which again points to mild heteroscedasticity rather than perfectly constant variance.
+
+In the Residuals vs Leverage plot, a small number of points have noticeably higher leverage and somewhat larger residuals, indicating that they may be influential observations. These cases could be examined in more detail, as they have more impact on the fitted model than typical points.
+
+Overall, the diagnostics suggest that the multiple linear regression model in 2.3 is acceptable but not perfect: the main assumptions are roughly satisfied, with some modest violations (slight non-linearity, mild heteroscedasticity, and a few influential observations). Addressing these issues, for example by transforming variables or investigating influential points, could lead to a modest improvement in the model.
+
+\textbf{2.5.} In this part of the assignment I use the dataset \texttt{mynewdata} to perform variable selection and identify a “best” regression model for \texttt{Grad.Rate}. I apply a forward selection procedure and use diagnostic plots of RSS, adjusted $R^2$, Mallows' $C_p$ and BIC and BIC to justify my choice of model size. Based on these plots I select a subset of predictors, fit a linear regression model for \texttt{Grad.Rate} using the chosen variables, and then examine the diagnostic plots for this final model to assess whether the regression assumptions are reasonably satisfied._
+
+```{r, eval=TRUE}
+library(leaps)
+
+# forward stepwise selection up to 16 predictors
+myfit.fwd <- regsubsets(Grad.Rate ~ ., data = mynewdata,
+                        nvmax = 16, method = "forward")
+myfit.fwd.sum <- summary(myfit.fwd)
+
+par(mfrow = c(2, 2))
+plot(myfit.fwd.sum$rss, xlab = "Number of predictors", ylab = "RSS",
+     type = "l", main = "RSS vs Number of predictors")
+plot(myfit.fwd.sum$adjr2, xlab = "Number of predictors", ylab = "Adjusted R-squared",
+     type = "l", main = "Adjusted R-squared vs Number of predictors")
+plot(myfit.fwd.sum$cp, xlab = "Number of predictors", ylab = "Cp",
+     type = "l", main = "Cp vs Number of predictors")
+plot(myfit.fwd.sum$bic, xlab = "Number of predictors", ylab = "BIC",
+     type = "l", main = "BIC vs Number of predictors")
+
+par(mfrow = c(1, 1))
+```
+
+# Favour model sizes by each criterion
+```{r}
+which.max(myfit.fwd.sum$adjr2)
+```
+```{r}
+which.min(myfit.fwd.sum$cp)
+```
+```{r}
+which.min(myfit.fwd.sum$bic)
+```
+# Coefficients for the model chosen by BIC
+```{r}
+coef(myfit.fwd, 8)
+```
+
+# Fit the final "best" forward model
+
+```{r}
+myfit.best.fwd <- lm(Grad.Rate ~ Apps + Outstate + Room.Board + PhD +
+                       perc.alumni + Private,
+                     data = mynewdata)
+
+summary(myfit.best.fwd)
+```
+# Diagnostic plots for the selected model
+```{r}
+par(mfrow = c(2, 2))
+plot(myfit.best.fwd)
+```
+
+So Model 7 (selected by BIC) is chosen as the best model because it has the lowest BIC and achieves a good fit using the smallest number of predictors among the competitive models.
+
+\textbf{Task 3: Open question}
+
+In this open question I try to improve the model for \texttt{Grad.Rate} obtained in Task 2 by allowing some non-linear effects and an interaction between \texttt{Private} and \texttt{Elite}. The models in Task 2 assume that \texttt{Grad.Rate} changes linearly with each numeric predictor. However, it is plausible that variables such as the number of applications, part-time enrolment or tuition fees might have curved (non-linear) relationships with graduation rate. To capture this, I fit models with quadratic polynomial terms for several continuous predictors and include the interaction \texttt{Private*Elite}. I then compare the new model with the simpler model from Task 2 using ANOVA and diagnostic plots.
+
+\textbf{3.1 Fit a richer polynomial + interaction model}
+
+```{r, eval=TRUE}
+library(car)
+
+myfit.best.poly <- lm(
+  Grad.Rate ~ poly(Apps, 2) +
+    poly(P.Undergrad, 2) +
+    poly(Outstate, 2) +
+    poly(PhD, 2) +
+    poly(Room.Board, 2) +
+    poly(Books, 2) +
+    poly(Personal, 2) +
+    Private * Elite,
+  data = mynewdata
+)
+
+summary(myfit.best.poly)
+```
+```{r, eval=TRUE}
+par(mfrow = c(2, 2))
+plot(myfit.best.poly)
+```
+
+In this model I include quadratic terms for several key continuous predictors (\texttt{Apps}, \texttt{P.Undergrad}, \texttt{Outstate}, \texttt{PhD}, \texttt{Room.Board}, \texttt{Books} and \texttt{Personal}) as well as the interaction \texttt{Private*Elite}. The summary output shows that many of the first-order polynomial terms (the “1” components in \texttt{poly()}) are highly significant, especially for \texttt{Apps}, \texttt{P.Undergrad}, \texttt{Outstate}, \texttt{PhD} and \texttt{Personal}, which suggests curved (non-linear) effects for these variables. Some of the second-order terms (the “2” components) are only weakly significant or not significant, indicating that the quadratic curvature is present but not very strong for all variables. The coefficients for \texttt{PrivateYes} and \texttt{EliteYes} remain important, so private and elite status continue to be associated with higher graduation rates in this richer model.
+
+Compared with the simple model in 2.1, the polynomial model has a much lower residual standard error (about 13.11 instead of 15.14) and a higher adjusted $R^2$ (about 0.419 instead of 0.224), so it clearly fits better than the basic two–predictor model. However, its adjusted $R^2$ is slightly lower than that of the full linear model in 2.3 (about 0.442), which means that the polynomial model improves on the very simple model but does not outperform the best multiple linear regression from Task 2.
+
+
+\textbf{3.2 Compare to the simple model using ANOVA}
+
+```{r}
+anova(myfit.simple, myfit.best.poly)
+```
+The ANOVA comparison \verb|anova(myfit.simple, myfit.best.poly)| tests whether the richer polynomial model provides a significant improvement over the simple linear model from Task 2.1. The table shows that the residual sum of squares (RSS) decreases from 159\,723 in the simple model to 117\,138 in the polynomial model, a reduction of 42\,585 units. The associated F-statistic is 16.529 with 15 and 682 degrees of freedom, and the p-value is less than $2.2\times 10^{-16}$. This extremely small p-value indicates that the additional polynomial and interaction terms lead to a highly significant improvement in fit. Therefore, the polynomial model explains substantially more of the variation in \texttt{Grad.Rate} than the simple model with only \texttt{Private} and \texttt{Elite}.
+
+
+\textbf{3.3 Refine the polynomial model}
+
+```{r}
+myfit.best.poly.refined <- lm(
+  Grad.Rate ~ poly(Apps, 2) +
+    poly(P.Undergrad, 2) +
+    poly(Outstate, 2) +
+    poly(PhD, 2) +
+    poly(Room.Board, 2) +
+    poly(Books, 2) +
+    Private * Elite,
+  data = mynewdata
+)
+
+summary(myfit.best.poly.refined)
+```
+
+To avoid overfitting and simplify interpretation, I refit a slightly smaller polynomial model by removing some of the least significant quadratic terms. The refined model keeps the strongest polynomial effects and the interaction \texttt{Private*Elite}. Its adjusted $R^2$ is about 0.413, which is only slightly lower than that of the full polynomial model (about 0.419) and still much higher than that of the simple model in 2.1. The residual standard error (about 13.17) is also close to that of the full polynomial model. This suggests that the refined model achieves a good balance between fit and complexity: it retains most of the explanatory power of the larger polynomial model while using fewer effective degrees of freedom.
+
+
+\textbf{3.4 Diagnostic plots for the refined model}
+
+```{r}
+par(mfrow = c(2, 2))
+plot(myfit.best.poly.refined)
+```
+The diagnostic plots for the refined polynomial model look slightly better than those for the earlier linear models. The Residuals vs Fitted plot shows residuals more evenly scattered around zero, suggesting that the added curvature helps to capture non-linear relationships. The Normal Q--Q plot indicates that the residuals are closer to normality, with only a few points in the tails deviating from the line. The Scale--Location plot shows a fairly stable spread of residuals across fitted values, and the Residuals vs Leverage plot highlights a small number of high-leverage observations, but no extremely dominant outliers. Overall, the refined polynomial model improves the fit and residual behaviour compared with the simpler models, while remaining reasonably interpretable.
+
